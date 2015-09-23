@@ -730,7 +730,16 @@ static int spi_transfer_one_message(struct spi_master *master,
 				keep_cs = true;
 			} else {
 				spi_set_cs(msg->spi, false);
-				udelay(10);
+				// if the no_delay flag is set, then skip cs_change delay
+				if(xfer->cs_change_no_delay == 0){
+					// default to 10 uS if no custom value was defined
+					if(xfer->cs_change_delay_usecs  == 0){
+						udelay(10);
+					}
+					else{
+						udelay(xfer->cs_change_delay_usecs);
+					}
+				}
 				spi_set_cs(msg->spi, true);
 			}
 		}

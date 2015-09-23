@@ -539,6 +539,13 @@ extern struct spi_master *spi_busnum_to_master(u16 busnum);
  * @bits_per_word: select a bits_per_word other than the device default
  *      for this transfer. If 0 the default (from @spi_device) is used.
  * @cs_change: affects chipselect after this transfer completes
+ * @cs_change_delay_usecs: microseconds to delay while chipselect
+ *	status is held active after completing this transfer.  If no
+ *  value is set, then the delay will default to 10 microseconds.
+ * @cs_change_no_delay: If 0 the value from @cs_change_delay_usecs
+ *  is used to determine the amount of delay time for the @cs_change.
+ *  If 1 then no delay time will be used and the chipselect will
+ *  toggle states as fast as possible if @cs_change is set.
  * @delay_usecs: microseconds to delay after this transfer before
  *	(optionally) changing the chipselect status, then starting
  *	the next transfer or completing this @spi_message.
@@ -616,6 +623,8 @@ struct spi_transfer {
 	struct sg_table rx_sg;
 
 	unsigned	cs_change:1;
+	unsigned	cs_change_no_delay:1;
+	u16	    	cs_change_delay_usecs;
 	unsigned	tx_nbits:3;
 	unsigned	rx_nbits:3;
 #define	SPI_NBITS_SINGLE	0x01 /* 1bit transfer */
