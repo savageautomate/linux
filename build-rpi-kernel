@@ -1,0 +1,86 @@
+#!/bin/bash 
+set -e   # fail on error
+
+echo 
+echo
+echo "******************************************************"
+echo "******************************************************"
+echo "**                                                  **"
+echo "**  THIS IS A CUSTOM BUILD SCRIPT FOR COMPILING A   **"
+echo "**  CUSTOM BUILD OF THE RASPBERRY PI LINUX KERNEL   **"
+echo "**     (SPECIFICALLY FOR THE RPI PLATFORM)          **"
+echo "**                                                  **"
+echo "******************************************************"
+echo "******************************************************"
+echo 
+echo " Please note that you must have the Raspberry Pi" 
+echo " cross-compiler tool chain available on your local"
+echo " build machine and also have the cross compiler"
+echo " path in your environment variables.  It may look"
+echo " something like the example below, however you will"
+echo " need to modify to account for your filesystem location"
+echo " and your local machine architecture x86/x64."
+echo 
+echo " > export PATH=\$PATH:\$HOME/rpi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
+echo 
+echo "[See this link for cross-compiling instructions: https://www.raspberrypi.org/documentation/linux/kernel/building.md]"
+echo
+
+echo "------------------------------"
+echo " GCC COMPILER VERSION"
+echo "------------------------------"
+arm-linux-gnueabihf-gcc --version
+
+echo
+echo "------------------------------"
+echo " CLEAN BEFORE BUILDING"
+echo "------------------------------"
+read -p "Do you want to clean before building <y|n>? (y) " yn
+case $yn in
+  [nN]* )    ;;
+  * ) 
+         echo "------------------------------"
+         echo "... CLEANING ..."
+         echo "------------------------------"
+         make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- clean
+         ;;
+esac
+
+
+echo
+echo "------------------------------"
+echo " PREPARE DEFAULT RPI CONFIG"
+echo "------------------------------"
+set -x
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bcm2709_defconfig
+set +x
+
+echo
+echo "------------------------------"
+echo " CUSTOM CONFIGURATION"
+echo "------------------------------"
+read -p "Do you want to customize the kernel build configuration <y|n>? (n) " yn
+case $yn in
+  [yY]* ) 
+         echo
+         echo "------------------------------"
+         echo " LAUNCH TOOL FOR CUSTOM CONFIG"
+         echo "------------------------------"
+         make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+         ;;
+  * )    ;;
+esac
+
+echo
+echo "------------------------------"
+echo " COMPILE KERNEL"
+echo "------------------------------"
+set -x
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage modules dtbs
+set +x
+
+echo
+echo "------------------------------"
+echo " KERNEL BUILD COMPLETE"
+echo "------------------------------"
+echo

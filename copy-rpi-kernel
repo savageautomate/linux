@@ -1,0 +1,127 @@
+#!/bin/bash 
+set -e   # fail on error
+
+echo 
+echo
+echo "******************************************************"
+echo "******************************************************"
+echo "**                                                  **"
+echo "**  THIS IS A CUSTOM BUILD SCRIPT FOR COPYING A     **"
+echo "**  CUSTOM BUILD OF THE RASPBERRY PI LINUX KERNEL   **"
+echo "**  TO AN EXISTING RASPIAN SDCARD or uSDCARD        **"
+echo "**                                                  **"
+echo "******************************************************"
+echo "******************************************************"
+echo 
+echo " Please note that you must have the Raspberry Pi" 
+echo " cross-compiler tool chain available on your local"
+echo " build machine and also have the cross compiler"
+echo " path in your environment variables.  It may look"
+echo " something like the example below, however you will"
+echo " need to modify to account for your filesystem location"
+echo " and your local machine architecture x86/x64."
+echo 
+echo " > export PATH=\$PATH:\$HOME/rpi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
+echo 
+
+echo "------------------------------"
+echo " GCC COMPILER VERSION"
+echo "------------------------------"
+arm-linux-gnueabihf-gcc --version
+
+echo "------------------------------"
+echo " RASPBERRY PI PLATFORM"
+echo "------------------------------"
+echo " (1) Raspberry Pi Models A, B, A+, B+, Compute Module"
+echo " (2) Raspberry Pi Model 2B <DEFAULT>"
+read -p "Which hardware platform do you wish to build the kernel for <1|2>? (2) " rpi_platform
+
+case $rpi_platform in
+  [1]* ) 
+         echo "----------------------------------------"
+         echo " COPY KERNEL FOR RASPBERRY PI A,B,A+,B+"
+         echo "----------------------------------------"
+         KERNEL=kernel         
+         ;;
+  * ) 
+         echo "---------------------------------"
+         echo " COPY KERNEL7 FOR RASPBERRY PI 2B"
+         echo "---------------------------------"
+         KERNEL=kernel7
+         ;;
+esac
+
+echo "------------------------------"
+echo " SDCARD MOUNTS"
+echo "------------------------------"
+lsblk
+echo
+echo "Provide SDCARD mount path for the FAT32 boot partition :"
+read -p " > " FAT32
+echo
+echo "Provide SDCARD mount path for the EXT4 data partition :"
+read -p " > " EXT4
+
+echo
+echo "You selected:"
+echo " [FAT32 BOOT] : $FAT32"
+echo " [EXT4 DATA]  : $EXT4"
+echo
+read -p "Are these mount paths correct (!! DO NOT SCREW THIS UP !!) <y|n>? (y) " yn
+case $yn in
+  [nN]* ) exit;;
+  *     ) ;;
+esac
+
+echo
+echo "------------------------------"
+echo " COPY MODULES TO SDCARD"
+echo "------------------------------"
+set -x
+sudo -E make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- INSTALL_MOD_PATH=$EXT4 modules_install
+set +x
+
+echo
+echo "------------------------------"
+echo " BACKUP & COPY KERNEL IMAGE"
+echo "------------------------------"
+set -x
+sudo -E cp $FAT32/$KERNEL.img $FAT32/$KERNEL-backup.img
+sudo -E scripts/mkknlimg arch/arm/boot/zImage $FAT32/$KERNEL.img
+set +x
+
+echo
+echo "------------------------------"
+echo " COPY DEVICE TREE & OVERLAYS"
+echo "------------------------------"
+set -x
+sudo -E cp arch/arm/boot/dts/*.dtb $FAT32
+sudo -E cp arch/arm/boot/dts/overlays/*.dtb* $FAT32/overlays/
+sudo -E cp arch/arm/boot/dts/overlays/README $FAT32/overlays/
+set +x
+
+echo
+echo "------------------------------"
+echo " SYNCING DATA TO SDCARD"
+echo "------------------------------"
+echo " ... please wait ... "
+sync
+
+echo
+echo "------------------------------"
+echo " UN-MOUNTING SDCARD"
+echo "------------------------------"
+echo " ... please wait ... "
+echo
+sudo -E umount $FAT32
+sudo -E umount $EXT4
+
+echo
+echo "------------------------------"
+echo " KERNEL COPIED TO SDCARD"
+echo "------------------------------"
+echo " You may now remove your SDCARD and boot your Raspberry Pi!"
+echo
+
+exit 0
+
