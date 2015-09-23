@@ -730,7 +730,8 @@ static int spi_transfer_one_message(struct spi_master *master,
 				keep_cs = true;
 			} else {
 				spi_set_cs(msg->spi, false);
-				udelay(10);
+                                if(xfer->cs_change_delay_usecs > 0) 
+                                	udelay(xfer->cs_change_delay_usecs);
 				spi_set_cs(msg->spi, true);
 			}
 		}
