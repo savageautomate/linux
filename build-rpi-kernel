@@ -46,14 +46,15 @@ case $yn in
          ;;
 esac
 
-
-echo
-echo "------------------------------"
-echo " PREPARE DEFAULT RPI CONFIG"
-echo "------------------------------"
-set -x
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bcm2709_defconfig
-set +x
+if [ ! -f .config ]; then
+	echo
+	echo "------------------------------"
+	echo " PREPARE DEFAULT RPI CONFIG"
+	echo "------------------------------"
+	set -x
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bcm2709_defconfig
+	set +x
+fi
 
 echo
 echo "------------------------------"

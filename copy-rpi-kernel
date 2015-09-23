@@ -24,10 +24,13 @@ echo
 echo " > export PATH=\$PATH:\$HOME/rpi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
 echo 
 
+ARM_GCC=$(eval which arm-linux-gnueabihf-gcc)
+CCPATH=$(dirname "${ARM_GCC}")
+
 echo "------------------------------"
 echo " GCC COMPILER VERSION"
 echo "------------------------------"
-arm-linux-gnueabihf-gcc --version
+sudo $CCPATH/arm-linux-gnueabihf-gcc --version
 
 echo "------------------------------"
 echo " RASPBERRY PI PLATFORM"
@@ -58,9 +61,16 @@ lsblk
 echo
 echo "Provide SDCARD mount path for the FAT32 boot partition :"
 read -p " > " FAT32
+if [ -z $FAT32 ]
+  then exit
+fi
+
 echo
 echo "Provide SDCARD mount path for the EXT4 data partition :"
 read -p " > " EXT4
+if [ -z $EXT4 ]
+  then exit
+fi
 
 echo
 echo "You selected:"
@@ -78,15 +88,22 @@ echo "------------------------------"
 echo " COPY MODULES TO SDCARD"
 echo "------------------------------"
 set -x
-sudo -E make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- INSTALL_MOD_PATH=$EXT4 modules_install
+sudo -E make ARCH=arm CROSS_COMPILE=$CCPATH/arm-linux-gnueabihf- INSTALL_MOD_PATH=$EXT4 modules_install
 set +x
 
 echo
 echo "------------------------------"
-echo " BACKUP & COPY KERNEL IMAGE"
+echo " BACKUP EXISTING KERNEL IMAGE"
 echo "------------------------------"
 set -x
 sudo -E cp $FAT32/$KERNEL.img $FAT32/$KERNEL-backup.img
+set +x
+
+echo
+echo "------------------------------"
+echo " COPY NEW KERNEL IMAGE"
+echo "------------------------------"
+set -x
 sudo -E scripts/mkknlimg arch/arm/boot/zImage $FAT32/$KERNEL.img
 set +x
 
